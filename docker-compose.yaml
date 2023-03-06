@@ -1,0 +1,86 @@
+version: '3.7'
+ 
+volumes: 
+ # DB for storing job status'
+  sqlite-db:
+
+networks:
+  luigi-net:
+    name: luigi-net
+
+services:
+  scheduled-trigger:
+    build:
+      context: ./services/biopipes
+      dockerfile: ./dockerfile
+    container_name: sched-trigger 
+    command: python /code/main.py -ll ${LOGLEVEL}
+    volumes:
+      - sqlite-db:/etc/sqlite/
+      - ${DATASET_PATH}:/code/datasets/
+    networks:
+      - luigi-net
+    env_file:
+      - .env
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m 
+    labels:
+      be.vliz.container.description: "Schedules and triggers luigi pipelines for emodnet-bio data processing"
+      be.vliz.container.owner: "rory.meyer@vliz.be"
+      be.vliz.container.project: "EMODNET-Bio"
+      be.vliz.container.group: "bio-pipes"
+      be.vliz.container.vcs-url: "https://github.com/vliz-be-opsci/bio-pipes"
+      be.vliz.container.docs-url: "https://github.com/vliz-be-opsci/bio-pipes"
+
+  sql-viewer:
+    image:  coleifer/sqlite-web
+    container_name: sql-viewer
+    volumes:
+      - sqlite-db:/etc/sqlite/ 
+    networks:
+      - luigi-net
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m 
+    labels:
+      be.vliz.container.description: "Simple sqlite web gui"
+      be.vliz.container.owner: "rory.meyer@vliz.be"
+      be.vliz.container.project: "EMODNET-Bio"
+      be.vliz.container.group: "bio-pipes"
+      be.vliz.container.vcs-url: "https://github.com/vliz-be-opsci/bio-pipes"
+      be.vliz.container.docs-url: "https://github.com/vliz-be-opsci/bio-pipes"
+
+  # Mini file server
+  # docker run -v /home/rory/git/dmbon-assistant:/tmp -p 8050:8080 --rm -it docker.io/svenstaro/miniserve /tmp
+  file-server: 
+      image: svenstaro/miniserve
+      command: /tmp
+      volumes: 
+        - ${DATASET_PATH}:/tmp
+      networks:
+        - luigi-net
+      env_file:
+        - .env
+      restart: unless-stopped
+      ports:
+      - "9080:8080"
+      logging:
+        driver: json-file
+        options:
+          max-size: 10m 
+      labels:
+        be.vliz.container.description: "Mini web server for serving the dataset files via HTTP"
+        be.vliz.container.owner: "rory.meyer@vliz.be"
+        be.vliz.container.project: "EMODNET-Bio"
+        be.vliz.container.group: "bio-pipes"
+        be.vliz.container.vcs-url: "https://github.com/vliz-be-opsci/bio-pipes"
+        be.vliz.container.docs-url: "https://github.com/vliz-be-opsci/bio-pipes"

@@ -1,0 +1,18 @@
+FROM python:3.9.13-slim
+
+# Install libs
+RUN apt-get -y update
+RUN apt-get -y install git && pip install git+https://github.com/vliz-be-opsci/cdi-sdn-py.git && apt-get clean
+
+# Install Python Libs
+ADD requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+# Setup dirs
+RUN mkdir -p /var/lib/luigi/data
+RUN touch /var/lib/luigi/data/luigi.db
+RUN mkdir /etc/luigi
+# Copy code
+RUN mkdir /code
+COPY ./ /code/
+
+RUN rm /tmp/*

@@ -1,0 +1,14 @@
+apscheduler==3.8.0
+lxml>=4.9.1
+requests==2.28.1
+numpy
+pandas
+dask
+argparse
+datetime
+geopy
+pyodv
+xmltodict
+bs4
+pymsteams
+git+https://github.com/vliz-be-opsci/cdi-sdn-py.git@main#egg=cdi-sdn-py
