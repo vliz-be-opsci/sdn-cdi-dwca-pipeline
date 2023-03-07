@@ -43,63 +43,7 @@ INSERT INTO jobs (
 	owner_email
 )
 VALUES (
-	'IFREMER PHYTOPLANKTON',
-	1,
-	0,
-	0,
-	'{"free_search":"Phytoplankton", "author_edmo":486, "custodium_edmo":"1838"}',
-	'1900-01-01 00:00:00.00',
-	'',
-	'',
-	'',
-	'FirstName LastName',
-	'firstname.lastname@vliz.be'
-);
-
---------------------------------------------------------------------------------
-INSERT INTO jobs (
-	name,
-	active,
-	order_placed,
-	retrigger,
-	query,
-	last_run,
-	last_data_file,
-	last_meta_file,
-	order_id,
-	owner,
-	owner_email
-)
-VALUES (
-	'SUBTIDAL OR INTERTIDAL',
-	1,
-	0,
-	0,
-	'{"author_edmo":486, "parameters_p03":"b055"}',
-	'1900-01-01 00:00:00.00',
-	'',
-	'',
-	'',
-	'FirstName LastName',
-	'firstname.lastname@vliz.be'
-);
-
---------------------------------------------------------------------------------
-INSERT INTO jobs (
-	name,
-	active,
-	order_placed,
-	retrigger,
-	query,
-	last_run,
-	last_data_file,
-	last_meta_file,
-	order_id,
-	owner,
-	owner_email
-)
-VALUES (
-	'POSIDONIA',
+	'POSIDONIA OCEANICA',
 	1,
 	0,
 	0,
@@ -211,7 +155,7 @@ INSERT INTO jobs (
 	owner_email
 )
 VALUES (
-	'ZOSTERA NOLTEI AND MARINA',
+	'ZOSTERA NOLTEI',
 	1,
 	0,
 	0,
@@ -251,3 +195,88 @@ VALUES (
 	'FirstName LastName',
 	'firstname.lastname@vliz.be'
 );
+
+--------------------------------------------------------------------------------
+INSERT INTO jobs (
+	name,
+	active,
+	order_placed,
+	retrigger,
+	query,
+	last_run,
+	last_data_file,
+	last_meta_file,
+	order_id,
+	owner,
+	owner_email
+)
+VALUES (
+	'ZOSTERA MARINA',
+	1,
+	0,
+	0,
+	'{"free_search":"zostera AND marina", "author_edmo":486, "custodium_edmo":"1838"}',
+	'1900-01-01 00:00:00.00',
+	'',
+	'',
+	'',
+	'FirstName LastName',
+	'firstname.lastname@vliz.be'
+);
+
+--------------------------------------------------------------------------------
+INSERT INTO jobs (
+	name,
+	active,
+	order_placed,
+	retrigger,
+	query,
+	last_run,
+	last_data_file,
+	last_meta_file,
+	order_id,
+	owner,
+	owner_email
+)
+VALUES (
+	'Intertidal and Subtidal Macroalgae',
+	1,
+	0,
+	0,
+	'{"free_search":"Macroalgae Biology", "author_edmo":486, "custodium_edmo":"1838"}',
+	'1900-01-01 00:00:00.00',
+	'',
+	'',
+	'',
+	'FirstName LastName',
+	'firstname.lastname@vliz.be'
+);
+
+--------------------------------------------------------------------------------
+INSERT INTO jobs (
+	name,
+	active,
+	order_placed,
+	retrigger,
+	query,
+	last_run,
+	last_data_file,
+	last_meta_file,
+	order_id,
+	owner,
+	owner_email
+)
+VALUES (
+	'Opportunistic macroalgae',
+	1,
+	0,
+	0,
+	'{"free_search":"Bloom", "author_edmo":486, "custodium_edmo":"1838"}',
+	'1900-01-01 00:00:00.00',
+	'',
+	'',
+	'',
+	'FirstName LastName',
+	'firstname.lastname@vliz.be'
+);
+
