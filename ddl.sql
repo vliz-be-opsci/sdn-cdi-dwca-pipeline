@@ -280,3 +280,31 @@ VALUES (
 	'firstname.lastname@vliz.be'
 );
 
+--------------------------------------------------------------------------------
+INSERT INTO jobs (
+	name,
+	active,
+	order_placed,
+	retrigger,
+	query,
+	last_run,
+	last_data_file,
+	last_meta_file,
+	order_id,
+	owner,
+	owner_email
+)
+VALUES (
+	'Benthic Invertebrates',
+	1,
+	0,
+	0,
+	'{"free_search":"ZooBenthos Biology"}',
+	'1900-01-01 00:00:00.00',
+	'',
+	'',
+	'',
+	'FirstName LastName',
+	'firstname.lastname@vliz.be'
+);
+
