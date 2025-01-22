@@ -259,7 +259,8 @@ def check_status():
                     # Check if new data is ready to download
                     log.info('Checking if order {0} is ready for download...'.format(job_dict.get('order_id')))
                     order_status = check_order_status(job_dict, api_client)
-                    if order_status.get('download') is not None:
+                    #Added a 's' at the end of the key 'download' because the output (dictionary) from the API have changed
+                    if order_status.get('downloads') is not None:
                         order_ready = True
                     else:
                         order_ready = False
