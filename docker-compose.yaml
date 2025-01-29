@@ -63,7 +63,7 @@ services:
   # docker run -v /home/rory/git/dmbon-assistant:/tmp -p 8050:8080 --rm -it docker.io/svenstaro/miniserve /tmp
   file-server: 
       image: svenstaro/miniserve
-      command: /tmp
+      command: -i 0.0.0.0 /tmp
       volumes: 
         - ${DATASET_PATH}:/tmp
       networks:
