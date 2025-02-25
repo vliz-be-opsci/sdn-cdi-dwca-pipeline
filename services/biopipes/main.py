@@ -3,23 +3,23 @@
 """
 Created on Jul 2022
 
-This is a the trigger subsystem for the bio-pipes system. The goal is 
+This is a the trigger subsystem for the bio-pipes system. The goal is
 to determine whether a dataset should be reloaded or not by checking
-the last modified time of the dataset on the SDN API server. 
+the last modified time of the dataset on the SDN API server.
 
-There should also be room for manual triggers via the luigi 
+There should also be room for manual triggers via the luigi
 web interface.
 
 @author: rory
 """
 
-import sys 
+import sys
 import argparse
-import logging 
+import logging
 import datetime
 import os
 import json
-import traceback  
+import traceback
 from pathlib import Path
 import urllib
 
@@ -32,26 +32,26 @@ import app.cdi_helper as cdi_helper
 import app.odv_to_dwc as odv_to_dwc
 import app.alerting as alerting
 
-log = logging.getLogger('main') 
+log = logging.getLogger('main')
 
-def trigger_pipeline(job_dict): 
+def trigger_pipeline(job_dict):
     '''
     Trigger the pipeline that needs to run after all the raw data has been
-    downloaded. 
+    downloaded.
     '''
     log.info('Triggering ODV-to-DwC conversion for job "{0}"'.format(job_dict.get('name')))
     status = odv_to_dwc.odv_to_dwc(job_dict)
-    
+
     # alert_msg = alerting.Alerter(os.getenv('WEBHOOK'))
     # alert_msg.create_msg_card(title = 'Message',
-    #                           text = '', 
+    #                           text = '',
     #                           activity_title = 'Activity',
-    #                           activity_text = '', 
-    #                           fact_dict = {}, 
+    #                           activity_text = '',
+    #                           fact_dict = {},
     #                           loglevel = "INFO")
     # alert_msg.send()
-    
- 
+
+
 def check_new_data(job_dict, api_client):
     '''
     Check if there is new/updated data to add to a dataset
@@ -80,11 +80,11 @@ def place_order(job_dict, api_client):
     '''
     Place an order for a dataset
     '''
-    log.info('  -Placing order for job {0}'.format(job_dict.get('job_id'))) 
+    log.info('  -Placing order for job {0}'.format(job_dict.get('job_id')))
     result = api_client.place_order(job_dict)
     if result.get('OrderNumber') is not None:
         job_dict['order_id'] = result.get('OrderNumber')
-        job_dict['last_run'] = datetime.datetime.now() 
+        job_dict['last_run'] = datetime.datetime.now()
         job_dict['order_placed'] = 1
     else:
         log.warning('Order placing failed...')
@@ -107,49 +107,53 @@ def download_order(job_dict, order_status, api_client):
     'order_lines_processing': 0,
     'order_lines_ready_for_download': 10,
     'order_number': 60838,
-    'sub_order': None, 
+    'sub_order': None,
     'userOrderName': 'from gui test'}
     '''
     log.info('Downloading order for job {0}'.format(job_dict.get('job_id')))
     log.debug(f'Job Dict: {job_dict}')
-    log.debug(f'Order Status: {order_status}') 
+    log.debug(f'Order Status: {order_status}')
 
     job_id = job_dict.get('job_id')
     order_number = order_status.get('order_number')
     order_name = order_status.get('userOrderName')
     download_complete = False
-    download_urls = order_status.get('download',{})
-    
+    #Added an 's' because the key of the output dictionary of seadatanet API has changed and added list index
+    download_urls = order_status.get('downloads',{})[0]
+
     log.info(f'Getting download urls: {download_urls}')
 
     # NOTE: For some reason the 'csv' metadata file can take some time to generate
-    # after the 'data' file is produced. Not sure why... 
-    # {'data': {'unrestricted': 
-    #                         {'name': 'order_60838_unrestricted.zip', 
-    #                          'downloadUrl': 'seadata.csc.fi/api/orders/60838/download/00/c/jE6%5Eo%3AlR%7Co%2BT%249I', 
+    # after the 'data' file is produced. Not sure why...
+    # {'data': {'unrestricted':
+    #                         {'name': 'order_60838_unrestricted.zip',
+    #                          'downloadUrl': 'seadata.csc.fi/api/orders/60838/download/00/c/jE6%5Eo%3AlR%7Co%2BT%249I',
+
     #                         'fileSize': 14037}
-    #           }, 
+    #           },
     #  'csv': {'unrestricted': []}
     # }
     try:
-        download_csv_url = download_urls.get('csv',{}).get('unrestricted',{}).get('downloadUrl') + '/unrestricted'
+        #Inverted 'unrestricted' and 'csv' because the order changed in the output dictonary of seadatanet API and removed  the +'/unrestricted'
+        download_csv_url = download_urls.get('unrestricted',{}).get('csv',{}).get('downloadUrl')
     except:
         download_csv_url = None
         log.warning('Problem getting CSV download URL from order')
     try:
-        download_data_url = download_urls.get('data',{}).get('unrestricted',{}).get('downloadUrl')
-        download_data_name = download_urls.get('data',{}).get('unrestricted',{}).get('name')
+        #Inverted 'unrestricted' and 'data' because the order changed in the seadatane API response
+        download_data_url = download_urls.get('unrestricted',{}).get('data',{}).get('downloadUrl')
+        download_data_name = download_urls.get('unrestricted',{}).get('data',{}).get('name')
     except:
         log.error('Problem getting ZIP download URL from order')
         download_data_url = None
-        download_data_name = None 
-    
+        download_data_name = None
+
     try:
         Path(f"/code/datasets/{order_name}/{order_number}").mkdir(parents=True, exist_ok=True)
         download_path = f"/code/datasets/{order_name}/{order_number}/{download_data_name}"
 
         if download_csv_url is not None:
-            # requests.get(download_csv_url) 
+            # requests.get(download_csv_url)
             p = urllib.parse.urlparse(download_csv_url,'http')
             csv_file = api_client.download_order(p.geturl())
             meta_path = f"/code/datasets/{order_name}/{order_number}/meta.zip"
@@ -158,9 +162,10 @@ def download_order(job_dict, order_status, api_client):
             job_dict['last_meta_file'] = meta_path
 
         if download_data_url is not None:
-            # data_file = requests.get("http://" + download_data_url) 
-            p = urllib.parse.urlparse('//' + download_data_url,'http')
-            data_file = api_client.download_order(p.geturl()) 
+            # data_file = requests.get("http://" + download_data_url)
+            # Removed '//'+ because the url have changed in the output of the seadatanet API
+            p = urllib.parse.urlparse(download_data_url,'http')
+            data_file = api_client.download_order(p.geturl())
             data_path = f"/code/datasets/{order_name}/{order_number}/{download_data_name}"
             open(data_path, "wb").write(data_file.content)
             log.debug(f'Downloaded data file {len(data_file.content)}')
@@ -173,8 +178,8 @@ def download_order(job_dict, order_status, api_client):
         log.error(e)
         download_complete = False
         download_path = ''
-        
-    if download_complete: 
+
+    if download_complete:
         log.info('Download complete. ')
     else:
         log.error('Error downloading job {0}'.format(job_id))
@@ -183,7 +188,7 @@ def download_order(job_dict, order_status, api_client):
 
 def parse_job(job_tuple):
     '''
-    Turns the job db tuple into a nice dict 
+    Turns the job db tuple into a nice dict
 
     CREATE TABLE IF NOT EXISTS jobs(
     0                   id INTEGER PRIMARY KEY,
@@ -197,10 +202,10 @@ def parse_job(job_tuple):
     8                   last_meta_file TEXT,
     9                   order_id INTEGER,
     10                  owner TEXT,
-    11                  owner_email TEXT 
+    11                  owner_email TEXT
     '''
     job_dict = {}
-    try: 
+    try:
         job_dict['job_id'] = job_tuple[0]
         job_dict['name'] = job_tuple[1]
         job_dict['active'] = job_tuple[2]
@@ -208,7 +213,7 @@ def parse_job(job_tuple):
         job_dict['retrigger'] = job_tuple[4]
         job_dict['query'] = json.loads(job_tuple[5])
 
-        # If the job has never been run before 
+        # If the job has never been run before
         if job_tuple[6] == '' or job_tuple[6] == None:
             job_dict['last_run'] = datetime.datetime(1900,1,1)
         else:
@@ -223,15 +228,15 @@ def parse_job(job_tuple):
         log.error('Error parsing job tuple: {0}'.format(e))
     return job_dict
 
-def check_status():  
+def check_status():
     '''
     Combine a prebuilt header/footer with snippets produced by other
-    containers into a new_datasets.xml file. 
+    containers into a new_datasets.xml file.
     '''
-    
+
     log.info('Fetching all jobs...')
     jobs =  db_helper.run_sql('SELECT * FROM jobs')
-    
+
     log.info('Setting up API client...')
     api_client = cdi_helper.SeadatanetAPI()
 
@@ -239,8 +244,8 @@ def check_status():
     for job in jobs:
         try:
             job_dict = parse_job(job)
-            log.info('=====================')  
-            log.info('Checking trigger for job "{0}"...'.format(job_dict.get('name')))  
+            log.info('=====================')
+            log.info('Checking trigger for job "{0}"...'.format(job_dict.get('name')))
 
             if job_dict.get('active'):
                 # Job is active and should be checked
@@ -283,7 +288,7 @@ def check_status():
                 # files available to use.
                 trigger_pipeline(job_dict)
 
-                # Job triggered, turn it off now. 
+                # Job triggered, turn it off now.
                 job_dict['retrigger'] = 0
 
             # All the work done, keep the job_dict up to date in the DB
@@ -291,7 +296,7 @@ def check_status():
             log.info('=====================')
 
         except Exception as e:
-            log.error('Job Error: {0}'.format(e)) 
+            log.error('Job Error: {0}'.format(e))
 
     log.debug('Jobs Summary:')
     log.debug(jobs)
@@ -307,18 +312,18 @@ def main(args):
         level=getattr(logging, args.loglevel))
 
     log.setLevel(getattr(logging, args.loglevel))
-    log.info('ARGS: {0}'.format(ARGS)) 
+    log.info('ARGS: {0}'.format(ARGS))
 
     db_helper.ensure_db()
 
     scheduler = BlockingScheduler()
     scheduler.add_job(lambda: check_status(), 'interval', minutes=int(os.getenv('RECHECK_MINS')))
-    try: 
+    try:
         check_status()
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         pass
-    log.info('Script Ended...') 
+    log.info('Script Ended...')
 
 if __name__ == "__main__":
     '''
