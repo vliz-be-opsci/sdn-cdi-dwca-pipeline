@@ -23,7 +23,7 @@ import pyodv
 log = logging.getLogger('odv_to_dwc')
 
 
-# Below are the dictionaries that map the ODV terms to the DwC terms. 
+# Below are the dictionaries that map the ODV terms to the DwC terms.
 # The columns in the value list are matched by order. Example:
 #   'institutionCode':['Originator','institutionCode','EDMO_code']
 #    The DwC column "institutionCode" is created with data pulled from "Originator", if that column
@@ -56,10 +56,10 @@ occ_mapping = {
             'eventID': ['eventID'],
             'occurrenceID': ['occurrenceID'],
             'basisOfRecord': ['basisOfRecord'],
-            'occurrenceStatus': ['occurrenceStatus'], # Hardcoded? 
+            'occurrenceStatus': ['occurrenceStatus'], # Hardcoded?
             'scientificName': ['ScientificName'], # Must have trailing space
-            'scientificNameID': ['ScientificNameID'], 
-            }   
+            'scientificNameID': ['ScientificNameID'],
+            }
 
 meta_event_mapping = {
         'eventID':['eventID'],
@@ -85,7 +85,7 @@ meta_event_mapping = {
 
 def odv_to_dwc(job_dict):
     '''
-    The actual function that does the conversions from 
+    The actual function that does the conversions from
     the ODV zip into the DwC
     '''
     odv_zip = job_dict.get('last_data_file')
@@ -113,7 +113,7 @@ def odv_to_dwc(job_dict):
     parsed_df  = pd.concat([parsed_df, df_id], axis='columns')
 
     # Create EventCore File
-    dwc_event = odv_dwc_mapping(parsed_df, event_mapping) 
+    dwc_event = odv_dwc_mapping(parsed_df, event_mapping)
     dwc_meta_event = meta_event_gen(folder_dict)
     dwc_event = pd.concat([dwc_meta_event,dwc_event])
 
@@ -125,20 +125,20 @@ def odv_to_dwc(job_dict):
     meta_dwc_emof = meta_emof_gen(folder_dict)
     dwc_emof = pd.concat([meta_dwc_emof,event_dwc_emof])
     dwc_emof = emof_cleanup(dwc_emof, occ_mapping, event_mapping)
-    
+
     # Check if there are duplicate ID's
-    good_ids = check_IDs(dwc_event, ['eventID'])  
+    good_ids = check_IDs(dwc_event, ['eventID'])
     if good_ids:
         pass
-    else: 
+    else:
         log.warning('Possible issues with duplicate event_ids')
-    
+
     # Create OccCore File
     dwc_occ = odv_dwc_mapping(parsed_df, occ_mapping)
-    good_ids = check_IDs(dwc_occ, ['occurrenceID'])  
+    good_ids = check_IDs(dwc_occ, ['occurrenceID'])
     if good_ids:
         pass
-    else: 
+    else:
         log.warning('Possible issues with duplicate Occurrence IDs')
 
     # Write files:
@@ -150,7 +150,7 @@ def odv_to_dwc(job_dict):
     log.info(f'===Finished converting {odv_zip} to DwC===')
     return parsed_df
 
- 
+
 def create_new_columns(parsed_df):
     parsed_df['occurrenceStatus'] = parsed_df.apply(find_occurrenceStatus, axis=1)
     parsed_df['basisOfRecord'] = parsed_df.apply(find_basisOfRecord, axis='columns')
@@ -165,7 +165,7 @@ def create_folder_structure(odv_zip):
     Create a directory structure next to the odv_zip file:
     > <some-file>.zip
     > ./meta.zip
-        
+
     > ./<some-file>/unzip
     > ./<some-file>/unzip/odv1.csv, odv2.csv ...
 
@@ -175,7 +175,7 @@ def create_folder_structure(odv_zip):
     > ./<some-file>/dwc/emof.csv
     '''
     log.debug(f'Creating folder structure for {odv_zip}...')
-    zipped_path = pathlib.Path(odv_zip).parent 
+    zipped_path = pathlib.Path(odv_zip).parent
     meta_zipped_path = zipped_path.joinpath('meta.zip')
 
     unzip_folder = pathlib.Path(zipped_path).joinpath('unzip')
@@ -183,10 +183,10 @@ def create_folder_structure(odv_zip):
 
     meta_file = pathlib.Path(odv_zip).stem + '.csv'
     meta_path = unzip_folder.joinpath(meta_file)
-    
+
     dwc_folder = pathlib.Path(zipped_path).joinpath('dwc')
     dwc_folder.mkdir(parents=True, exist_ok=True)
-    
+
     event_file = pathlib.Path(zipped_path).joinpath('dwc').joinpath('event.csv')
     occ_file = pathlib.Path(zipped_path).joinpath('dwc').joinpath('occ.csv')
     emof_file = pathlib.Path(zipped_path).joinpath('dwc').joinpath('emof.csv')
@@ -211,16 +211,16 @@ def unzip(folder_dict):
     log.debug(f"Unzipping file {folder_dict.get('odv_zip')} into {folder_dict.get('unzip_folder')}...")
     with zipfile.ZipFile(folder_dict.get('odv_zip'), 'r') as zip_ref:
         zip_ref.extractall(folder_dict.get('unzip_folder'))
-    
+
     log.debug(f"Unzipping Metadata file {folder_dict.get('meta_zip')} into {folder_dict.get('unzip_folder')}...")
     with zipfile.ZipFile(folder_dict.get('meta_zip'), 'r') as zip_ref:
         zip_ref.extractall(folder_dict.get('unzip_folder'))
 
-    return 
+    return
 
 def parse_odv(folder_dict):
     '''
-    Parse all the ODV files in the unzipped path into 
+    Parse all the ODV files in the unzipped path into
     a single data object.
     '''
     unzipped_path = folder_dict.get('unzip_folder')
@@ -230,21 +230,21 @@ def parse_odv(folder_dict):
     config = {'occurrenceStatus_hardcode': 'present'}
 
     odv_list  = []
-    df_list = [] 
+    df_list = []
     ref_list = []
     for filename in os.listdir(unzipped_path):
-        
+
         f = os.path.join(unzipped_path, filename)
         # checking if it is a file
         if os.path.isfile(f):
             try:
                 log.debug(f'===== {f} =====')
-                parsed_file = pyodv.ODV_Struct(f) 
-                odv_list.append(parsed_file) 
+                parsed_file = pyodv.ODV_Struct(f)
+                odv_list.append(parsed_file)
                 ref_list.append(parsed_file.refs[0])
                 this_df = pd.concat([parsed_file.df_data, parsed_file.df_var],axis=1)
                 this_df['scope'] = parsed_file.refs[0]['@sdn:scope'].split(':')[-1]
-                this_df['defined_by'] = parsed_file.refs[0]['@xlink:href'] 
+                this_df['defined_by'] = parsed_file.refs[0]['@xlink:href']
                 df_list.append(this_df)
             except Exception as err:
                 log.debug(err)
@@ -258,23 +258,23 @@ def parse_odv(folder_dict):
         log.warning('Problem with reading metadata file!')
         metadata_df = pd.DataFrame()
 
-    merged_df = pd.concat(df_list, axis=0) 
+    merged_df = pd.concat(df_list, axis=0)
     merged_df = merged_df.join(metadata_df.set_index('LOCAL_CDI_ID_split'), on='LOCAL_CDI_ID', how='left', rsuffix = '_meta')
     merged_df.reset_index(level=None, drop=True, inplace = True)
     return merged_df, odv_list
 
 def create_IDs(row):
     '''
-    Create EventID and OccurrenceID. 
+    Create EventID and OccurrenceID.
     Both are a concatenation of the other columns. They also become the columns to join on in the Occurrence Table
-    and Event table. 
+    and Event table.
     '''
     # ==== Event ID ====
-    eventID_columns = ['LOCAL_CDI_ID', 
-                        'Station', 
+    eventID_columns = ['LOCAL_CDI_ID',
+                        'Station',
                         'yyyy-mm-ddThh:mm:ss.sss',
-                        'YYYY-MM-DDThh:mm:ss.sss', 
-                        'Samplingprotocol', 
+                        'YYYY-MM-DDThh:mm:ss.sss',
+                        'Samplingprotocol',
                         'SamplingProtocol',
                         'maximumDepthInMeters',
                         'MaximumObservationDepth',
@@ -286,15 +286,15 @@ def create_IDs(row):
         if col in row.index:
             new_col.append(str(row[col]))
     pattern = re.compile(r'\s+')
-    long_eventID = re.sub(pattern, '', '_'.join(new_col)) 
+    long_eventID = re.sub(pattern, '', '_'.join(new_col))
     # Create hash of long_eventID since the downstream tools can't handle eventID's longer than 255 chars
-    eventID = hashlib.sha1(long_eventID.encode("UTF-8")).hexdigest()[:20] 
-    
+    eventID = hashlib.sha1(long_eventID.encode("UTF-8")).hexdigest()[:20]
+
 
     # ==== Ahpia ID ====
-    try:  
-        scinameID_col = [i for i in row.index if i.startswith('ScientificNameID')] 
-        sciname_col = [i for i in row.index if i.startswith('ScientificName')] 
+    try:
+        scinameID_col = [i for i in row.index if i.startswith('ScientificNameID')]
+        sciname_col = [i for i in row.index if i.startswith('ScientificName')]
         if pd.isnull(row[scinameID_col[0]]):
             aphia_id = row[sciname_col[0]].replace(' ','_')
         else:
@@ -305,29 +305,30 @@ def create_IDs(row):
         print(err)
 
     # ==== occ ID ====
-    subsamples = [i for i in row.index if i.startswith('SubsampleID')] 
-    sample = [i for i in row.index if i.startswith('SampleID')] 
+    subsamples = [i for i in row.index if i.startswith('SubsampleID')]
+    sample = [i for i in row.index if i.startswith('SampleID')]
     # get 8 chars from the hashed sci-name col
-    sciname_str = str(row[sciname_col][0])
+    # Added .iloc[index] because treating keys as position is deprecated and it will raise an error in the future if not changed
+    sciname_str = str(row[sciname_col].iloc[0])
     hash = hashlib.sha1(sciname_str.encode("UTF-8")).hexdigest()[:10]
 
     if len(subsamples) == 0:
         occurrenceID = str(row[sample[0]]) + '_' + str(aphia_id) + '_' + str(hash)
     else:
         occurrenceID = str(row[sample[0]]) + '_' + str(row[subsamples[0]]) + '_' + str(aphia_id) + '_' + str(hash)
-    
+
     # ==== Parent Event ID ====
     parentEventID = row['LOCAL_CDI_ID']
-    
+
     return eventID, occurrenceID, parentEventID
 
 def check_IDs(dff, id_col):
     '''
     Check for duplicate ID's, if there are then figure out why and rerun with a wider event_columns list.
-    Currently there are problematic duplicate event IDs but it's likely that this problem could exist in the 
-    occurrence table too. 
+    Currently there are problematic duplicate event IDs but it's likely that this problem could exist in the
+    occurrence table too.
     '''
-    xx = dff[dff.duplicated(keep=False, subset=id_col)] 
+    xx = dff[dff.duplicated(keep=False, subset=id_col)]
     if len(xx) == 0:
         # No duplicates! Good news!
         return True
@@ -337,22 +338,22 @@ def check_IDs(dff, id_col):
 def create_wkt(row):
     '''
     Create WKT from the dataset for each row
-    Uses Latitude 1,Latitude 2,Longitude 1,Longitude 2 
-    from metadata. Must return uncertainty in meters. 
+    Uses Latitude 1,Latitude 2,Longitude 1,Longitude 2
+    from metadata. Must return uncertainty in meters.
     '''
-    
+
     try:
         max_lat = max(row['Latitude 1'], row['Latitude 2'])
         min_lat = min(row['Latitude 1'], row['Latitude 2'])
         max_lon = max(row['Longitude 1'], row['Longitude 2'])
         min_lon = min(row['Longitude 1'], row['Longitude 2'])
         bounding_wkt = f"POLYGON (({min_lon} {min_lat}, {min_lon} {max_lat}, {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))"
-        
+
         lat_c = (max_lat + min_lat)/2
         lon_c = (max_lon + min_lon)/2
-        
-        coord_uncertainty = geopy.distance.geodesic((min_lon, min_lat), (lon_c, lat_c)).m 
-          
+
+        coord_uncertainty = geopy.distance.geodesic((min_lon, min_lat), (lon_c, lat_c)).m
+
     except Exception as err:
         print(err)
         bounding_wkt = None
@@ -371,12 +372,12 @@ def find_occurrenceStatus(row):
             return 'absent'
     else:
         return 'present'
-            
+
 
 
 def find_basisOfRecord(row):
     '''
-    Do something to create BasisOfRecord. 
+    Do something to create BasisOfRecord.
     '''
     return 'MaterialSample'
 
@@ -384,13 +385,14 @@ def find_basisOfRecord(row):
 def get_units_from_nerc(measurementUnitID):
     '''
     Get the english units from the nerc vocab
-    server. 
-    ''' 
+    server.
+    '''
     log.debug('   -Downloading vocab from NERC')
     # nerc_uri = row['measurementUnitID']
     nerc_uri = measurementUnitID
     xx = requests.get(nerc_uri + '?_profile=nvs&_mediatype=application/ld+json')
-    alt_labels = json.loads(xx.content)['altLabel']
+    # Changed the key 'altLabel' to 'skos:altLabel' because it was changed in the resulting json file from NERC
+    alt_labels = json.loads(xx.content)['skos:altLabel']
     if isinstance(alt_labels, list):
         for x in alt_labels:
             if isinstance(x, str):
@@ -402,38 +404,38 @@ def get_units_from_nerc(measurementUnitID):
         log.warning(f'Failure to handle Label: {alt_labels}')
     return alt_label
 
-def convert_params_to_df(odv_list):    
+def convert_params_to_df(odv_list):
     '''
-    Convert the ODV Params into Nerc URI's in order to get them 
-    closer towards EMOF. 
+    Convert the ODV Params into Nerc URI's in order to get them
+    closer towards EMOF.
     '''
     log.debug('   -Converting ODV params to dataframe...')
     odv_params_list = []
     for odv_obj in odv_list:
-        # Loop through ODV items and get the symantic params per file source.     
+        # Loop through ODV items and get the symantic params per file source.
         xx = [x | odv_obj.refs[0] for x in odv_obj.params]
         odv_params_list.append(xx)
 
     params_df =  pd.DataFrame(list(chain.from_iterable(odv_params_list))).drop_duplicates()
-    # Create a "scope" variable which pretty much allows all other dataframes to join based on file source. 
+    # Create a "scope" variable which pretty much allows all other dataframes to join based on file source.
     params_df['scope'] = params_df['@sdn:scope'].str.split(':').str[-1]
-    params_df['measurementType'] = params_df['subject'].apply(lambda x: x.split(':')[-1]) 
+    params_df['measurementType'] = params_df['subject'].apply(lambda x: x.split(':')[-1])
     params_df['measurementUnitID'] = params_df['units'].apply(lambda x: f"https://vocab.nerc.ac.uk/collection/P06/current/{x.split('::')[-1]}/")
     params_df['measurementTypeID'] = params_df['object'].apply(lambda x: f"https://vocab.nerc.ac.uk/collection/P01/current/{x.split('::')[-1]}/")
     params_df['measurementUnit'] = params_df.apply(lambda x: get_units_from_nerc(x['measurementUnitID']), axis=1)
 
-    params_df['measurementType'] = params_df['subject'].apply(lambda x: x.split(':')[-1]) 
+    params_df['measurementType'] = params_df['subject'].apply(lambda x: x.split(':')[-1])
     params_df['measurementUnitID'] = params_df['units'].apply(lambda x: f"https://vocab.nerc.ac.uk/collection/P06/current/{x.split('::')[-1]}/")
     params_df['measurementTypeID'] = params_df['object'].apply(lambda x: f"https://vocab.nerc.ac.uk/collection/P01/current/{x.split('::')[-1]}/")
     params_df['measurementUnit'] = params_df.apply(lambda x: get_units_from_nerc(x['measurementUnitID']), axis=1)
-    
+
     return params_df
 
 def rename_odv_columns(df):
     '''
     Rename the ODV dataframe by
       - Strip anything between square brackets: 'Latitude [degrees_north]' >> 'Latitude'
-      - Remove the ':INDEXED_TEXT' text in ODV column names. 
+      - Remove the ':INDEXED_TEXT' text in ODV column names.
       - Run Mapping from ODV names to DwC names: 'Longitude [degrees_east]' >> Longitude >> decimalLongitude
     Mapping should be from a list of possible ODV terms to a single DwC term. Gonna be tough to do...
     '''
@@ -446,22 +448,22 @@ def rename_odv_columns(df):
 
 def odv_dwc_mapping(df, map_dict):
     '''
-    Take mapping dict and create a new DF that has columns with <map_dict key> as names taken from 
+    Take mapping dict and create a new DF that has columns with <map_dict key> as names taken from
     old_df <map_dict values>.
-    
-    dwc_name : [odv_colname1, odv_colname2 ...] 
+
+    dwc_name : [odv_colname1, odv_colname2 ...]
     '''
     log.debug('   -Mapping column names...')
-        
+
     dwc_col_list = []
     rename_dict = {}
     for dwc_colname, odv_colname_list in map_dict.items():
         for odv_colname in odv_colname_list:
             if odv_colname is not None:
                 this_column = ''
-                try: 
+                try:
                     this_column = odv_colname
-                    
+
                     dwc_col = df[this_column]
                     dwc_col.name = dwc_colname
                     rename_dict[odv_colname] = dwc_colname
@@ -470,16 +472,16 @@ def odv_dwc_mapping(df, map_dict):
                     break
                 except Exception as err:
                     log.debug(f'KeyError: Changing {this_column} column to {dwc_colname} but failed.')
-                    
+
     mapped_df = pd.concat(dwc_col_list, axis=1)
     mapped_df = mapped_df.rename(columns=rename_dict)
-    mapped_df = mapped_df.drop_duplicates() 
+    mapped_df = mapped_df.drop_duplicates()
     return mapped_df
 
 def emof_gen(in_df, in_emof_df):
     '''
-    Create EMOF table from the emof_params. 
-    Loops through each 
+    Create EMOF table from the emof_params.
+    Loops through each
     '''
     log.info('   -Generating EMOF file...')
     log.info('   -Size of EMOF_DF: '+str(len(in_emof_df)))
@@ -494,7 +496,7 @@ def emof_gen(in_df, in_emof_df):
             in_df = in_df.rename(columns={measurementType: f"_{measurementType}"})
             in_df[measurementType] = df_coalesce["_"]
         df_subset = in_df[(in_df[measurementType].notna()) & (in_df['scope'] == scope)][['eventID','occurrenceID',measurementType]]
-        if not df_subset.empty: 
+        if not df_subset.empty:
             emof_subset = df_subset.copy()
             emof_subset['measurementID'] = [uuid.uuid4() for _ in range(len(emof_subset.index))]
             emof_subset['measurementValue'] = emof_subset[measurementType]
@@ -515,7 +517,7 @@ def emof_gen(in_df, in_emof_df):
             emof_subsets.append(emof_subset)
 
             if 'instrument' in row.index and pd.notna(row.instrument):
-                # This row has tool information           
+                # This row has tool information
                 emof_tool_subset = df_subset.copy()
                 instrument_uri = f"http://vocab.nerc.ac.uk/collection/L22/current/{row['instrument'].split('::')[-1]}/"
                 emof_tool_subset['measurementID'] = None
@@ -545,9 +547,9 @@ def emof_gen(in_df, in_emof_df):
 def emof_cleanup(emof_df, occ_mapping, event_mapping):
     '''
     Any measurementType that is also in the Occ or Event tables must be ignored. Also drop rows
-    where the measurementValue is NaN. 
+    where the measurementValue is NaN.
     '''
-        
+
     log.debug('   -Cleaning EMOF file...')
     mapping_list = []
     z = {**occ_mapping, **event_mapping}
@@ -574,14 +576,14 @@ def meta_event_gen(folder_dict):
     meta_events = odv_dwc_mapping(meta_df, meta_event_mapping)
     return meta_events
 
-def meta_emof_gen(folder_dict): 
+def meta_emof_gen(folder_dict):
     '''
-    Convert the ODV Metadata file into an EMOF starter file. 
-    Much of this is hard coded since there isn't too much semantic info 
-    available on WHAT the CDI meta csv file actually means. 
+    Convert the ODV Metadata file into an EMOF starter file.
+    Much of this is hard coded since there isn't too much semantic info
+    available on WHAT the CDI meta csv file actually means.
     '''
     log.debug('   -Converting metafile into emof dataframe...')
-    
+
 
     meta_df =  pd.read_csv(folder_dict.get('meta_path'))
     # meta_params = convert_meta_params_to_df(meta_df)
@@ -608,7 +610,7 @@ def meta_emof_gen(folder_dict):
                           'measurementUnitID': 'https://vocab.nerc.ac.uk/collection/P06/current/XXXX/',
                           },
                          {'measurementType': 'Platform type',
-                          'measurementTypeID': 'http://vocab.nerc.ac.uk/collection/W06/current/CLSS0001/', 
+                          'measurementTypeID': 'http://vocab.nerc.ac.uk/collection/W06/current/CLSS0001/',
                           'measurementValueID' : 'http://vocab.nerc.ac.uk/collection/L06/current/0/',
                           'measurementUnit': 'NA',
                           'measurementUnitID': 'https://vocab.nerc.ac.uk/collection/P06/current/XXXX/',
@@ -618,8 +620,8 @@ def meta_emof_gen(folder_dict):
 
     emof_subsets = []
     for index, row in template_df.iterrows():
-        measurementType = row['measurementType'] 
-        df_subset = in_df[(in_df[measurementType].notna())] 
+        measurementType = row['measurementType']
+        df_subset = in_df[(in_df[measurementType].notna())]
 
         if not df_subset.empty:
             emof_subset = df_subset.copy()
@@ -636,12 +638,12 @@ def meta_emof_gen(folder_dict):
                 emof_subset['measurementTypeID'] = row['measurementTypeID'] +  gear_number
 
             elif measurementType == 'Platform type':
-                platform_number = emof_subset[measurementType].str.extract(r'\((\d*?)\)') 
+                platform_number = emof_subset[measurementType].str.extract(r'\((\d*?)\)')
                 emof_subset['measurementTypeID'] = row['measurementTypeID'] +  platform_number
-                
-            elif measurementType == 'Water depth (m)': 
+
+            elif measurementType == 'Water depth (m)':
                 emof_subset['measurementMethod'] = emof_subset['Depth reference']
-                
+
             else:
                 emof_subset['measurementTypeID'] = ''
 
@@ -658,5 +660,5 @@ def meta_emof_gen(folder_dict):
                                        'measurementUnit',
                                        'measurementUnitID']]
             emof_subsets.append(emof_subset)
-    meta_params_df = pd.concat(emof_subsets) 
+    meta_params_df = pd.concat(emof_subsets)
     return meta_params_df
